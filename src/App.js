@@ -84,6 +84,12 @@ const App = () => {
     ctx.fillStyle = "#FFF";
     ctx.fill();
     ctx.closePath();
+
+    // Draw scores
+    ctx.font = "30px Arial";
+    ctx.fillStyle = "#FFF";
+    ctx.fillText(`Player 1: ${gameState.player1.score}`, 50, 30);
+    ctx.fillText(`Player 2: ${gameState.player2.score}`, canvasWidth - 150, 30);
   };
 
   // Select player and start the game
