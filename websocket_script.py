@@ -15,7 +15,7 @@ connected_clients = set()
 game_state = {
     "player1": {"y": 200},  # y-position of player 1
     "player2": {"y": 200},  # y-position of player 2
-    "ball": {"x": 400, "y": 200, "speed_x": 2, "speed_y": 2}  # Ball position and speed
+    "ball": {"x": 400, "y": 200, "speed_x": 4, "speed_y": 4}  # Ball position and speed
 }
 
 async def handle_client(websocket):
@@ -30,7 +30,6 @@ async def handle_client(websocket):
         # Listen for messages from the client (keyboard events)
         async for message in websocket:
             print(f"Message from client: {message}")
-            # Update the game state based on the player's movement (e.g., "w", "s")
             try:
                 data = json.loads(message)
                 player = data.get("player")
@@ -48,7 +47,7 @@ async def handle_client(websocket):
                     elif direction == "down" and game_state["player2"]["y"] < canvasHeight - paddleHeight:
                         game_state["player2"]["y"] += 10
 
-                # Broadcast the updated game state to all clients
+                # Broadcast updated game state to all clients
                 for client in connected_clients:
                     if client != websocket:
                         try:
@@ -90,6 +89,7 @@ async def game_loop():
 
         # Broadcast updated game state to all connected clients
         for client in connected_clients:
+            print(game_state)
             try:
                 await client.send(json.dumps(game_state))
             except websockets.exceptions.ConnectionClosed:
@@ -97,13 +97,31 @@ async def game_loop():
 
         await asyncio.sleep(0.02)  # ~50 FPS
 
+async def close_all_connections():
+    """Gracefully close all existing WebSocket connections."""
+    print("Closing all active connections...")
+    for client in list(connected_clients):  # Make a list copy of the set
+        try:
+            await client.close()
+        except websockets.exceptions.ConnectionClosed:
+            pass
+    connected_clients.clear()  # Clear the set after closing connections
+
+
 async def main():
     # Set up the WebSocket server to listen on ws://localhost:8765
-    async with websockets.serve(handle_client, "localhost", 8765):
-        print("WebSocket server is running on ws://localhost:8765")
-        # Run the game loop in the background
-        asyncio.create_task(game_loop())
+    server = await websockets.serve(handle_client, "localhost", 8765)
+    print("WebSocket server is running on ws://localhost:8765")
+
+    # Start the game loop in the background
+    asyncio.create_task(game_loop())
+
+    # Gracefully shut down on server exit
+    try:
         await asyncio.Future()  # Keep the server running indefinitely
+    except:
+        print("Shutting down the server...")
+        await close_all_connections()  # Close all WebSocket connections before exit
 
 # Start the WebSocket server
 if __name__ == "__main__":
