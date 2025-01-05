@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 import json
+import random
 
 # Constants for the game (dimensions)
 canvasWidth = 800
@@ -64,6 +65,7 @@ async def handle_client(websocket):
         # Unregister the client when they disconnect
         connected_clients.remove(websocket)
 
+
 async def game_loop():
     """Runs a game loop to update the ball's position and broadcast the game state."""
     global game_state
@@ -75,21 +77,37 @@ async def game_loop():
         # Ball collision with top and bottom walls
         if game_state['ball']['y'] <= 0 or game_state['ball']['y'] >= canvasHeight:
             game_state['ball']['speed_y'] = -game_state['ball']['speed_y']
+            # Add slight randomization to speed to change the ball's angle a little
+            game_state['ball']['speed_y'] += random.choice([-1, 1])
 
         # Ball collision with paddles
         if game_state['ball']['x'] <= paddleWidth and (
             game_state['ball']['y'] >= game_state['player1']['y'] and
             game_state['ball']['y'] <= game_state['player1']['y'] + paddleHeight):
+            # Reverse direction and add random variation to speed
             game_state['ball']['speed_x'] = -game_state['ball']['speed_x']
+            # Randomly modify the vertical speed after bouncing
+            game_state['ball']['speed_y'] += random.choice([-1, 1])  # This adds a slight random factor
 
         if game_state['ball']['x'] >= canvasWidth - paddleWidth and (
             game_state['ball']['y'] >= game_state['player2']['y'] and
             game_state['ball']['y'] <= game_state['player2']['y'] + paddleHeight):
+            # Reverse direction and add random variation to speed
             game_state['ball']['speed_x'] = -game_state['ball']['speed_x']
+            # Randomly modify the vertical speed after bouncing
+            game_state['ball']['speed_y'] += random.choice([-1, 1])  # Random slight vertical bounce
+
+        # Ensure the ball doesn't go past the left and right edges
+        if game_state['ball']['x'] <= 0:
+            game_state['ball']['x'] = 0  # Reset the ball position to the left edge
+            game_state['ball']['speed_x'] = -game_state['ball']['speed_x']  # Reverse direction
+
+        if game_state['ball']['x'] >= canvasWidth:
+            game_state['ball']['x'] = canvasWidth  # Reset the ball position to the right edge
+            game_state['ball']['speed_x'] = -game_state['ball']['speed_x']  # Reverse direction
 
         # Broadcast updated game state to all connected clients
         for client in connected_clients:
-            print(game_state)
             try:
                 await client.send(json.dumps(game_state))
             except websockets.exceptions.ConnectionClosed:
@@ -122,6 +140,7 @@ async def main():
     except:
         print("Shutting down the server...")
         await close_all_connections()  # Close all WebSocket connections before exit
+        exit()
 
 # Start the WebSocket server
 if __name__ == "__main__":
