@@ -34,7 +34,6 @@ const App = () => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!player || !gameState) return;
-
       let direction = "";
       if (player === "player1") {
         if (e.key === "w") direction = "up";
@@ -66,7 +65,7 @@ const App = () => {
 
   // Draw game state on the canvas
   const renderGame = () => {
-    if (!gameState || !canvasRef.current) return; // Ensure canvas is available
+    if (!gameState || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
