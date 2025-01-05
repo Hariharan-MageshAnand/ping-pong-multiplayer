@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const App = () => {
-  const canvasRef = useRef(null);
+  const [player, setPlayer] = useState(null); // Track which player is selected
+  const canvasRef = useRef(null); // Reference for the canvas element
 
   const canvasWidth = 800;
   const canvasHeight = 400;
@@ -10,9 +11,9 @@ const App = () => {
   const paddleHeight = 100;
   const ballRadius = 10;
   const paddleSpeed = 4;  // Speed of paddle movement
-  const ballSpeed = 10;  // Slower ball speed
+  const ballSpeed = 2;  // Slower ball speed
 
-  // Ref to track paddle and ball positions
+  // Refs to track paddle and ball positions
   const leftPaddleY = useRef(canvasHeight / 2 - paddleHeight / 2);
   const rightPaddleY = useRef(canvasHeight / 2 - paddleHeight / 2);
   const ballX = useRef(canvasWidth / 2);
@@ -95,23 +96,29 @@ const App = () => {
     movePaddles();
     moveBall();
     renderGame();
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(gameLoop); // Keep the game running
   };
 
   // Keydown events for paddle control
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "w") leftUp.current = true;
-      if (e.key === "s") leftDown.current = true;
-      if (e.key === "ArrowUp") rightUp.current = true;
-      if (e.key === "ArrowDown") rightDown.current = true;
+      if (player === "player1") {
+        if (e.key === "w") leftUp.current = true;
+        if (e.key === "s") leftDown.current = true;
+      } else if (player === "player2") {
+        if (e.key === "ArrowUp") rightUp.current = true;
+        if (e.key === "ArrowDown") rightDown.current = true;
+      }
     };
 
     const handleKeyUp = (e) => {
-      if (e.key === "w") leftUp.current = false;
-      if (e.key === "s") leftDown.current = false;
-      if (e.key === "ArrowUp") rightUp.current = false;
-      if (e.key === "ArrowDown") rightDown.current = false;
+      if (player === "player1") {
+        if (e.key === "w") leftUp.current = false;
+        if (e.key === "s") leftDown.current = false;
+      } else if (player === "player2") {
+        if (e.key === "ArrowUp") rightUp.current = false;
+        if (e.key === "ArrowDown") rightDown.current = false;
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -121,15 +128,37 @@ const App = () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, []);
+  }, [player]);
 
+  // Start game loop
   useEffect(() => {
-    gameLoop();
-  }, []);
+    if (player) {
+      gameLoop();
+    }
+  }, [player]);
 
+  // Handle player selection
+  const selectPlayer = (selectedPlayer) => {
+    setPlayer(selectedPlayer);
+  };
+
+  // Render player selection screen or game screen
   return (
     <div className="App">
-      <canvas ref={canvasRef} width={canvasWidth} height={canvasHeight}></canvas>
+      {player === null ? (
+        <div className="player-selection">
+          <h2>Select Your Player</h2>
+          <button onClick={() => selectPlayer("player1")}>Player 1 (W/S)</button>
+          <button onClick={() => selectPlayer("player2")}>Player 2 (Arrow Up/Down)</button>
+        </div>
+      ) : (
+        <div>
+          <h2>Player Selected: {player === "player1" ? "Player 1" : "Player 2"}</h2>
+          <p>Controls:</p>
+          <p>{player === "player1" ? "Player 1: Use W and S to move" : "Player 2: Use Arrow Up and Down to move"}</p>
+          <canvas ref={canvasRef} width={canvasWidth} height={canvasHeight}></canvas>
+        </div>
+      )}
     </div>
   );
 };
